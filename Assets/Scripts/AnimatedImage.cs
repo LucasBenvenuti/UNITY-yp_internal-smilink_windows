@@ -74,5 +74,7 @@ public class AnimatedImage : MonoBehaviour
         pathFinished = await mp4Recorder.FinishWriting();
 
         Debug.Log(pathFinished);
+
+        AppController.instance.fullySavedText.text = pathFinished;
     }
 }

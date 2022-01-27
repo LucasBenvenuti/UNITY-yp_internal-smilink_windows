@@ -25,6 +25,8 @@ public class AppController : MonoBehaviour
 
     [SerializeField] AnimatedImage animatedImage;
 
+    public TMP_Text fullySavedText;
+
     void Awake()
     {
         if(instance == null)
@@ -43,6 +45,12 @@ public class AppController : MonoBehaviour
                 appPhases[i].alpha = 0f;
                 appPhases[i].interactable = false;
                 appPhases[i].blocksRaycasts = false;
+            }
+            else
+            {
+                appPhases[i].alpha = 1f;
+                appPhases[i].interactable = true;
+                appPhases[i].blocksRaycasts = true;
             }
         }
 

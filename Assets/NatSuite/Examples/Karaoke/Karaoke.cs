@@ -50,7 +50,7 @@ namespace NatSuite.Examples {
             var path = await recorder.FinishWriting();
             // Playback recording
             Debug.Log($"Saved recording to: {path}");
-            Handheld.PlayFullScreenMovie($"file://{path}");
+            // Handheld.PlayFullScreenMovie($"file://{path}");
         }
     }
 }
