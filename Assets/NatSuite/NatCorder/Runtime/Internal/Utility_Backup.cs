@@ -9,18 +9,17 @@ namespace NatSuite.Recorders.Internal {
     using System.IO;
     using UnityEngine;
 
-    public static class Utility {
+    public static class Utility_Backup {
 
         private static string directory;
 
         public static string GetPath (string extension) {
             if (directory == null) {
                 var editor = Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.WindowsEditor;
-                // directory = editor ? Directory.GetCurrentDirectory() : Application.persistentDataPath;
-                directory = Application.persistentDataPath;
+                directory = editor ? Directory.GetCurrentDirectory() : Application.persistentDataPath;
             }
             var timestamp = DateTime.Now.ToString("yyyy_MM_dd_HH_mm_ss_fff");
-            var name = $"Smilink_Record_{timestamp}{extension}";
+            var name = $"recording_{timestamp}{extension}";
             var path = Path.Combine(directory, name);
             return path;
         }
