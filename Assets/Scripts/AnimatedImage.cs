@@ -72,9 +72,15 @@ public class AnimatedImage : MonoBehaviour
     async void CallFinish()
     {
         pathFinished = await mp4Recorder.FinishWriting();
-
         Debug.Log(pathFinished);
 
-        AppController.instance.fullySavedText.text = pathFinished;
+        StartCoroutine(UploadStart(pathFinished));
+    }
+
+    IEnumerator UploadStart(string path)
+    {
+        yield return new WaitForSeconds(1f);
+        
+        AWS3.instance.UploadFileToAWS3("videoTest.mp4", path);
     }
 }

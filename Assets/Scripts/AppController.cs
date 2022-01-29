@@ -27,6 +27,8 @@ public class AppController : MonoBehaviour
 
     public TMP_Text fullySavedText;
 
+    public int currentDeviceInUse = 0;
+
     void Awake()
     {
         if(instance == null)
@@ -63,18 +65,43 @@ public class AppController : MonoBehaviour
     {
         currentCounter = startCounterFrom;
 
+        currentDeviceInUse = PlayerPrefs.GetInt("DeviceInUse");
+
         CleanPersistentData();
+    }
+
+    void Update()
+    {
+        if(Input.GetKeyDown(KeyCode.C) && currentAppPhase == 0)
+        {
+            if(currentAppPhase == 0)
+            {
+                GoToAppPhase(3);   
+            }
+            else
+            {
+                Debug.Log("Você precisa estar na etapa inicial do jogo para abrir o menu de configurações");
+            }
+        }        
     }
 
     public void GoToAppPhase(int phaseID)
     {
-        webcamElement.StartCamera();
+        if(phaseID == 1)
+        {
+            webcamElement.StartCamera();
+        }
+        else if(phaseID == 3)
+        {
+            webcamElement.StartConfigCamera();
+        }
 
         LeanTween.value(gameObject, 0f, 1f, 1f).setOnComplete(()=>{
-            LeanTween.alphaCanvas(appPhases[currentAppPhase], 0, 0.5f).setEaseInOutCubic().setOnStart(()=>{
-                appPhases[currentAppPhase].interactable = false;
-                appPhases[currentAppPhase].blocksRaycasts = false;
-            });
+
+            appPhases[currentAppPhase].interactable = false;
+            appPhases[currentAppPhase].blocksRaycasts = false;
+
+            LeanTween.alphaCanvas(appPhases[currentAppPhase], 0, 0.5f).setEaseInOutCubic().setOnStart(()=>{});
 
             currentAppPhase = phaseID;
 
@@ -90,6 +117,11 @@ public class AppController : MonoBehaviour
                 {
                     StartCounter();
                 }
+                else if(currentAppPhase == 0)
+                {
+                    webcamElement.StopCamera();
+                    webcamElement.StopConfigCamera();
+                }
                 else if(currentAppPhase == 2)
                 {
                     webcamElement.StopCamera();
@@ -102,7 +134,6 @@ public class AppController : MonoBehaviour
 
     public void StartCounter()
     {
-
         StartCoroutine(StartCounterEnumerator());
     }
 
@@ -133,7 +164,8 @@ public class AppController : MonoBehaviour
 
         yield return new WaitForSeconds(0.4f);
 
-        webcamElement.StartWebcamCapture();
+        webcamElement.StartTakePhoto();
+        // webcamElement.StartWebcamCapture();
     }
 
     public void CleanPersistentData()
@@ -173,6 +205,33 @@ public class AppController : MonoBehaviour
         }
     }
 
+    public void LoadSpriteFromBytes(byte[] byteArray)
+    {
+        if (byteArray.Length == 0)
+        {
+            Debug.Log("Byte vazio ou nulo");
+
+            return;
+        }
+
+        Texture2D texture = new Texture2D(1280, 800, TextureFormat.RGB24, false);
+        texture.filterMode = FilterMode.Trilinear;
+        texture.LoadImage(byteArray);
+
+        pictures.Add(texture);
+
+        currentImageID++;
+
+        if(currentImageID < totalImagesForVideo)
+        {
+            StartCounter();
+        }
+        else
+        {
+            GenerateVideo();
+        }
+    }
+
     public void GenerateVideo()
     {
         Debug.Log("CAPTURE HAS ENDED");
@@ -180,5 +239,26 @@ public class AppController : MonoBehaviour
         GoToAppPhase(2);
 
         animatedImage.StartAnimation();
+    }
+
+    public void SetCameraDevice(int i)
+    {
+        Debug.Log(i);
+        
+
+        if(i < webcamElement.devicesList.Count)
+        {
+            currentDeviceInUse = i;
+            
+            webcamElement.webcamConfigTexture.Stop();
+            webcamElement.webcamConfigTexture.deviceName = webcamElement.devicesList[currentDeviceInUse];
+            webcamElement.webcamConfigTexture.Play();
+
+            PlayerPrefs.SetInt("DeviceInUse", currentDeviceInUse);
+        }
+        else
+        {
+            Debug.Log("No device detected!");
+        }
     }
 }
