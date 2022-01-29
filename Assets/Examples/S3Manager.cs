@@ -34,7 +34,7 @@ namespace AWSSDK.Examples
         [Header("AWS Setup")]
         [SerializeField] private string identityPoolId;
         [SerializeField] private string cognitoIdentityRegion = RegionEndpoint.USEast1.SystemName;
-        [SerializeField] private string s3Region = RegionEndpoint.USEast1.SystemName;
+        [SerializeField] public string s3Region = RegionEndpoint.USEast1.SystemName;
 
         // Variables privates
         private int timeoutGetObject = 5; // seconds
@@ -178,7 +178,9 @@ namespace AWSSDK.Examples
             Client.PostObjectAsync(request, (responseObj) =>
             {
                 if (responseObj.Exception == null)
+                {
                     result?.Invoke(responseObj.Response, "");
+                }
                 else
                     result?.Invoke(null, responseObj.Exception.ToString());
             });

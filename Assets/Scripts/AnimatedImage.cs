@@ -4,9 +4,11 @@ using UnityEngine;
 using UnityEngine.UI;
 using NatSuite.Recorders;
 using NatSuite.Recorders.Clocks;
+using AWSSDK.Examples;
 
 public class AnimatedImage : MonoBehaviour
 {
+    [SerializeField] AppManager_Custom appManager_Custom;
     [SerializeField] RenderTexture renderTexture;
 
     [SerializeField] RawImage rawImage;
@@ -18,7 +20,6 @@ public class AnimatedImage : MonoBehaviour
     MP4Recorder mp4Recorder;
     private IClock clock;
     string pathFinished;
-
     Texture2D readbackTexture;
 
     public void StartAnimation()
@@ -27,7 +28,7 @@ public class AnimatedImage : MonoBehaviour
 
         clock = new RealtimeClock();
         
-        mp4Recorder = new MP4Recorder(1280, 800, 1);
+        mp4Recorder = new MP4Recorder(1080, 1920, 1);
 
         canRun = true;
         StartCoroutine(StartAnimationEnumerator());
@@ -74,11 +75,16 @@ public class AnimatedImage : MonoBehaviour
         pathFinished = await mp4Recorder.FinishWriting();
         Debug.Log(pathFinished);
 
-        StartCoroutine(UploadStart(pathFinished));
+        string[] completePathArray = pathFinished.Split('/');
+        string[] finalPathArray = completePathArray[completePathArray.Length - 1].Split('\\');
+        string fileName = finalPathArray[finalPathArray.Length - 1];
+
+        appManager_Custom.UploadFileToAWS(pathFinished, fileName);
     }
 
     IEnumerator UploadStart(string path)
     {
+
         yield return new WaitForSeconds(1f);
 
         // AWS3.instance.UploadFileToAWS3("videoTest.mp4", path);

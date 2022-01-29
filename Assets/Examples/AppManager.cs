@@ -127,7 +127,7 @@ namespace AWSSDK.Examples
             {
                 if(string.IsNullOrEmpty(error))
                 {
-                    resultTextOperation.text += "\nUpload Success";
+                    resultTextOperation.text += "\nUpload Success";                    
                 }
                 else
                 {

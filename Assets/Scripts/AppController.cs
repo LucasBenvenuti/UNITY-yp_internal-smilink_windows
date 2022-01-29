@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 using TMPro;
 
 public class AppController : MonoBehaviour
@@ -22,8 +23,10 @@ public class AppController : MonoBehaviour
     [SerializeField] TMP_Text counterTextElement;
     [SerializeField] CanvasGroup counterTextBox;
     [SerializeField] WebcamBehavior webcamElement;
-
     [SerializeField] AnimatedImage animatedImage;
+
+    [SerializeField] CanvasGroup fadeImage;
+    public TMP_Text loadingText;
 
     public TMP_Text fullySavedText;
 
@@ -59,10 +62,21 @@ public class AppController : MonoBehaviour
         counterTextBox.alpha = 0f;
         counterTextBox.interactable = false;
         counterTextBox.blocksRaycasts = false;
+
+        fadeImage.alpha = 1f;
+        fadeImage.interactable = true;
+        fadeImage.blocksRaycasts = true;
     }
 
     void Start()
     {
+        LeanTween.value(gameObject, 0f, 1f, 1f).setOnComplete(()=> {
+            LeanTween.alphaCanvas(fadeImage, 0f, 0.5f).setEaseInOutCubic().setOnComplete(()=> {
+                fadeImage.interactable = false;
+                fadeImage.blocksRaycasts = false;
+            });
+        });
+
         currentCounter = startCounterFrom;
 
         currentDeviceInUse = PlayerPrefs.GetInt("DeviceInUse");
@@ -90,6 +104,10 @@ public class AppController : MonoBehaviour
         if(phaseID == 1)
         {
             webcamElement.StartCamera();
+        }
+        else if(phaseID == 2)
+        {
+            loadingText.text = "Estamos criando seu vídeo para\ncompartilhamento";
         }
         else if(phaseID == 3)
         {
@@ -260,5 +278,15 @@ public class AppController : MonoBehaviour
         {
             Debug.Log("No device detected!");
         }
+    }
+
+    public void RestartScene()
+    {
+        LeanTween.alphaCanvas(fadeImage, 1f, 0.5f).setEaseInOutCubic().setOnStart(()=> {
+            fadeImage.interactable = false;
+            fadeImage.blocksRaycasts = false;
+        }).setOnComplete(()=> {
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        });
     }
 }
