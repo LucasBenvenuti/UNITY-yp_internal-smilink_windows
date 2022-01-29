@@ -80,7 +80,7 @@ public class AnimatedImage : MonoBehaviour
     IEnumerator UploadStart(string path)
     {
         yield return new WaitForSeconds(1f);
-        
-        AWS3.instance.UploadFileToAWS3("videoTest.mp4", path);
+
+        // AWS3.instance.UploadFileToAWS3("videoTest.mp4", path);
     }
 }
