@@ -24,7 +24,8 @@ public class AppController : MonoBehaviour
     [SerializeField] CanvasGroup counterTextBox;
     [SerializeField] WebcamBehavior webcamElement;
     [SerializeField] AnimatedImage animatedImage;
-
+    public TMP_Text poseText;
+    public CanvasGroup poseTextBox;
     [SerializeField] CanvasGroup fadeImage;
     public TMP_Text loadingText;
 
@@ -62,6 +63,10 @@ public class AppController : MonoBehaviour
         counterTextBox.alpha = 0f;
         counterTextBox.interactable = false;
         counterTextBox.blocksRaycasts = false;
+
+        poseTextBox.alpha = 0f;
+        poseTextBox.interactable = false;
+        poseTextBox.blocksRaycasts = false;
 
         fadeImage.alpha = 1f;
         fadeImage.interactable = true;
@@ -140,7 +145,7 @@ public class AppController : MonoBehaviour
                     webcamElement.StopCamera();
                     webcamElement.StopConfigCamera();
                 }
-                else if(currentAppPhase == 2)
+                else if(currentAppPhase == 4)
                 {
                     webcamElement.StopCamera();
                 }
@@ -157,8 +162,18 @@ public class AppController : MonoBehaviour
 
     IEnumerator StartCounterEnumerator()
     {
+        poseText.text = "Prepare sua pose " + (currentImageID + 1) + " / " + totalImagesForVideo;
+
         if(currentImageID == 0)
+        {
+            LeanTween.alphaCanvas(poseTextBox, 1f, 0.5f).setEaseInOutCubic().setOnComplete(()=> {});
+
             yield return new WaitForSeconds(2f);
+        }
+        else
+        {
+            LeanTween.alphaCanvas(poseTextBox, 1f, 0.5f).setEaseInOutCubic().setOnComplete(()=> {});
+        }
 
         LeanTween.alphaCanvas(counterTextBox, 1f, 0.5f).setEaseInOutCubic();
 
@@ -179,6 +194,8 @@ public class AppController : MonoBehaviour
             currentCounter = startCounterFrom;
             counterTextElement.text = currentCounter.ToString();
         });
+
+        LeanTween.alphaCanvas(poseTextBox, 0f, 0.2f).setEaseInOutCubic().setOnComplete(()=> {});
 
         yield return new WaitForSeconds(0.4f);
 
