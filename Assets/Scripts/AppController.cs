@@ -119,7 +119,7 @@ public class AppController : MonoBehaviour
             webcamElement.StartConfigCamera();
         }
 
-        LeanTween.value(gameObject, 0f, 1f, 1f).setOnComplete(()=>{
+        LeanTween.value(gameObject, 0f, 1f, 0.5f).setOnComplete(()=>{
 
             appPhases[currentAppPhase].interactable = false;
             appPhases[currentAppPhase].blocksRaycasts = false;
@@ -162,7 +162,7 @@ public class AppController : MonoBehaviour
 
     IEnumerator StartCounterEnumerator()
     {
-        poseText.text = "Prepare sua pose " + (currentImageID + 1) + " / " + totalImagesForVideo;
+        poseText.text = "Prepare sua pose <b>" + (currentImageID + 1) + "</b> de <b>" + totalImagesForVideo + "</b>";
 
         if(currentImageID == 0)
         {
