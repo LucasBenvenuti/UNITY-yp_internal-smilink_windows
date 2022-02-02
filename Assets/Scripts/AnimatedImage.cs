@@ -18,7 +18,10 @@ public class AnimatedImage : MonoBehaviour
 
     [SerializeField] bool canRun = false;
     [SerializeField] VideoPlayer frameAnimation;
+    [SerializeField] AudioSource audioSource;
     int currentImageID = 0;
+
+    [SerializeField] float frameRateVideo = 24f;
 
     [SerializeField] List<CanvasGroup> dismissedCanvasGroup = new List<CanvasGroup>();
 
@@ -35,7 +38,7 @@ public class AnimatedImage : MonoBehaviour
 
         clock = new RealtimeClock();
         
-        mp4Recorder = new MP4Recorder(1080, 1920, 24);
+        mp4Recorder = new MP4Recorder(1080, 1920, frameRateVideo, 48000, 2);
 
         canRun = true;
         StartCoroutine(StartAnimationEnumerator());
@@ -48,18 +51,10 @@ public class AnimatedImage : MonoBehaviour
 
         while(canRun)
         {
-            // rawImage.texture = AppController.instance.pictures[currentImageID];
             frameAnimation.Play();
+            audioSource.Play();
 
             yield return new WaitForSeconds(delayBetweenImages);
-
-            // readbackTexture = new Texture2D(renderTexture.width, renderTexture.height);
-            // RenderTexture.active = renderTexture;
-
-            // readbackTexture.ReadPixels(new Rect(0, 0, renderTexture.width, renderTexture.height), 0, 0);
-            // RenderTexture.active = null;
-
-            // mp4Recorder.CommitFrame(readbackTexture.GetPixels32(), clock.timestamp);
 
             if(currentImageID == AppController.instance.pictures.Count - 1)
             {
@@ -74,11 +69,9 @@ public class AnimatedImage : MonoBehaviour
                 }
 
                 frameAnimation.Stop();
+                audioSource.Stop();
 
                 yield return new WaitForSeconds(delayBetweenImages);
-
-                // mp4Recorder.CommitFrame(readbackTexture.GetPixels32(), clock.timestamp);
-
 
                 CallFinish();
 
@@ -87,6 +80,7 @@ public class AnimatedImage : MonoBehaviour
             else
             {
                 frameAnimation.Stop();
+                audioSource.Stop();
 
                 currentImageID++;
             }
@@ -94,21 +88,13 @@ public class AnimatedImage : MonoBehaviour
         }
     }
 
-    // void Update () {
-    //         // Record frames from the webcam
-    //         if (canRun && webCamTexture.didUpdateThisFrame) {
-    //             webCamTexture.GetPixels32(pixelBuffer);
-    //             recorder.CommitFrame(pixelBuffer, clock.timestamp);
-    //         }
-    //     }
-
     IEnumerator StartRecordEnumerator()
     {
         while(canRun)
         {
             rawImage.texture = AppController.instance.pictures[currentImageID];
 
-            yield return new WaitForSeconds(1f / 24f);
+            yield return new WaitForSeconds(1f / frameRateVideo);
 
             readbackTexture = new Texture2D(renderTexture.width, renderTexture.height);
             RenderTexture.active = renderTexture;
@@ -116,27 +102,7 @@ public class AnimatedImage : MonoBehaviour
             readbackTexture.ReadPixels(new Rect(0, 0, renderTexture.width, renderTexture.height), 0, 0);
             RenderTexture.active = null;
             rawImage.color = Color.white;
-
             mp4Recorder.CommitFrame(readbackTexture.GetPixels32(), clock.timestamp);
-
-            // if(currentImageID == AppController.instance.pictures.Count - 1)
-            // {
-            //     canRun = false;
-            //     // frameAnimation.Stop();
-
-            //     yield return new WaitForSeconds(1f / 24f);
-
-            //     mp4Recorder.CommitFrame(readbackTexture.GetPixels32(), clock.timestamp);
-
-
-            //     // CallFinish();
-
-            //     // currentImageID = 0;
-            // }
-            // else
-            // {
-            //     // currentImageID++;
-            // }
 
         }
     }
@@ -153,11 +119,11 @@ public class AnimatedImage : MonoBehaviour
         appManager_Custom.UploadFileToAWS(pathFinished, fileName);
     }
 
-    IEnumerator UploadStart(string path)
+    void OnAudioFilterRead(float[] sampleBuffer, int channels)
     {
-
-        yield return new WaitForSeconds(1f);
-
-        // AWS3.instance.UploadFileToAWS3("videoTest.mp4", path);
+        if (mp4Recorder != null && canRun)
+        {
+            mp4Recorder.CommitSamples(sampleBuffer, clock.timestamp);
+        }
     }
 }
