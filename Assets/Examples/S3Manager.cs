@@ -177,9 +177,14 @@ namespace AWSSDK.Examples
 
             Client.PostObjectAsync(request, (responseObj) =>
             {
+                Debug.Log(responseObj.Request);
+                Debug.Log(responseObj.Exception);
+                Debug.Log(responseObj.Response);
+                
                 if (responseObj.Exception == null)
                 {
                     result?.Invoke(responseObj.Response, "");
+
                 }
                 else
                     result?.Invoke(null, responseObj.Exception.ToString());
