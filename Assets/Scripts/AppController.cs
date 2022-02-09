@@ -33,6 +33,14 @@ public class AppController : MonoBehaviour
 
     public int currentDeviceInUse = 0;
 
+    [SerializeField] Animator cameraIconAnimator;
+    [SerializeField] AudioSource audioSource;
+    [SerializeField] CanvasGroup fadeEffect;
+    
+    bool hasRestarted = false;
+    [SerializeField] int restartTime = 60; 
+    int currentRestartTime = 0; 
+
     void Awake()
     {
         if(instance == null)
@@ -71,6 +79,10 @@ public class AppController : MonoBehaviour
         fadeImage.alpha = 1f;
         fadeImage.interactable = true;
         fadeImage.blocksRaycasts = true;
+
+        fadeEffect.alpha = 0f;
+        fadeEffect.interactable = false;
+        fadeEffect.blocksRaycasts = false;
     }
 
     void Start()
@@ -108,7 +120,7 @@ public class AppController : MonoBehaviour
     {
         if(phaseID == 1)
         {
-            webcamElement.StartCamera();
+            // webcamElement.StartCamera();
         }
         else if(phaseID == 2)
         {
@@ -116,10 +128,11 @@ public class AppController : MonoBehaviour
         }
         else if(phaseID == 3)
         {
+            webcamElement.StopCamera();
             webcamElement.StartConfigCamera();
         }
 
-        LeanTween.value(gameObject, 0f, 1f, 0.5f).setOnComplete(()=>{
+        LeanTween.value(gameObject, 0f, 1f, 0.2f).setOnComplete(()=>{
 
             appPhases[currentAppPhase].interactable = false;
             appPhases[currentAppPhase].blocksRaycasts = false;
@@ -142,17 +155,37 @@ public class AppController : MonoBehaviour
                 }
                 else if(currentAppPhase == 0)
                 {
-                    webcamElement.StopCamera();
+                    webcamElement.StartCamera();
                     webcamElement.StopConfigCamera();
                 }
                 else if(currentAppPhase == 4)
                 {
                     webcamElement.StopCamera();
+
+                    StartCoroutine(RestartCounter());
                 }
                 
             });
 
         });
+    }
+
+    IEnumerator RestartCounter()
+    {
+        while(!hasRestarted)
+        {
+            currentRestartTime++;
+
+            yield return new WaitForSeconds(1f);
+
+            if(currentRestartTime >= restartTime)
+            {
+                hasRestarted = true;
+
+                RestartScene();
+            }
+            
+        }
     }
 
     public void StartCounter()
@@ -166,13 +199,17 @@ public class AppController : MonoBehaviour
 
         if(currentImageID == 0)
         {
-            LeanTween.alphaCanvas(poseTextBox, 1f, 0.5f).setEaseInOutCubic().setOnComplete(()=> {});
+            LeanTween.alphaCanvas(poseTextBox, 1f, 0.5f).setEaseInOutCubic().setOnStart(()=>{
+                LeanTween.alphaCanvas(cameraIconAnimator.GetComponent<CanvasGroup>(), 1f, 0.2f).setEaseInOutCubic().setOnComplete(()=> { cameraIconAnimator.SetTrigger("ReturnAnim");});
+            }).setOnComplete(()=> {});
 
-            yield return new WaitForSeconds(2f);
+            yield return new WaitForSeconds(3f);
         }
         else
         {
-            LeanTween.alphaCanvas(poseTextBox, 1f, 0.5f).setEaseInOutCubic().setOnComplete(()=> {});
+            LeanTween.alphaCanvas(poseTextBox, 1f, 0.5f).setEaseInOutCubic().setOnStart(()=>{
+                LeanTween.alphaCanvas(cameraIconAnimator.GetComponent<CanvasGroup>(), 1f, 0.2f).setEaseInOutCubic().setOnComplete(()=> { cameraIconAnimator.SetTrigger("ReturnAnim");});
+            }).setOnComplete(()=> {});
         }
 
         LeanTween.alphaCanvas(counterTextBox, 1f, 0.5f).setEaseInOutCubic();
@@ -195,7 +232,15 @@ public class AppController : MonoBehaviour
             counterTextElement.text = currentCounter.ToString();
         });
 
-        LeanTween.alphaCanvas(poseTextBox, 0f, 0.2f).setEaseInOutCubic().setOnComplete(()=> {});
+        LeanTween.alphaCanvas(poseTextBox, 0f, 0.2f).setEaseInOutCubic().setOnStart(()=> {
+            LeanTween.alphaCanvas(cameraIconAnimator.GetComponent<CanvasGroup>(), 0f, 0.2f).setEaseInOutCubic().setOnComplete(()=> { cameraIconAnimator.SetTrigger("EndAnim"); });
+        }).setOnComplete(()=> {});
+
+        audioSource.Play();
+
+        LeanTween.alphaCanvas(fadeEffect, 0.8f, 0.1f).setEaseInCirc().setOnComplete(()=> {
+            LeanTween.alphaCanvas(fadeEffect, 0f, 0.1f).setEaseOutCirc().setOnComplete(()=> {});
+        });
 
         yield return new WaitForSeconds(0.4f);
 
@@ -299,6 +344,8 @@ public class AppController : MonoBehaviour
 
     public void RestartScene()
     {
+        hasRestarted = true;
+
         LeanTween.alphaCanvas(fadeImage, 1f, 0.5f).setEaseInOutCubic().setOnStart(()=> {
             fadeImage.interactable = false;
             fadeImage.blocksRaycasts = false;

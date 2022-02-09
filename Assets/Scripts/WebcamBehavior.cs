@@ -42,6 +42,8 @@ public class WebcamBehavior : MonoBehaviour
             DeviceOption deviceOption = Instantiate(deviceButtonPrefab, deviceButtonsContainer.transform);
             deviceOption.InitialSetup(i, devicesList[i]);
         }
+
+        StartCamera();
     }
 
     public void StartCamera()
@@ -79,7 +81,7 @@ public class WebcamBehavior : MonoBehaviour
 
     IEnumerator TakePhoto()
     {
-     yield return new WaitForEndOfFrame(); 
+        yield return new WaitForEndOfFrame(); 
 
         Texture2D photo = new Texture2D(webcamTexture.width, webcamTexture.height);
         photo.SetPixels(webcamTexture.GetPixels());
