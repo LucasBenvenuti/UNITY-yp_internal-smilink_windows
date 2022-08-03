@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Windows.WebCam;
@@ -15,16 +16,52 @@ public class WebcamBehavior : MonoBehaviour
 
     [SerializeField] RawImage rawImage;
 
-    WebCamTexture webcamTexture;
+    public WebCamTexture webcamTexture;
+    public WebCamTexture webcamConfigTexture;
+
+    public List<string> devicesList = new List<string>();
 
     string filePath;
+
+    [SerializeField] RawImage rawImage_Config;
+
+    [SerializeField] GameObject deviceButtonsContainer;
+    [SerializeField] DeviceOption deviceButtonPrefab;
+
+    void Start()
+    {
+        webcamTexture = new WebCamTexture();
+        webcamConfigTexture = new WebCamTexture();
+
+        WebCamDevice[] devices = WebCamTexture.devices;
+        for (int i = 0; i < devices.Length; i++)
+        {
+            devicesList.Add(devices[i].name);
+            Debug.Log(devices[i].name);
+
+            DeviceOption deviceOption = Instantiate(deviceButtonPrefab, deviceButtonsContainer.transform);
+            deviceOption.InitialSetup(i, devicesList[i]);
+        }
+
+        StartCamera();
+    }
 
     public void StartCamera()
     {
         webcamTexture = new WebCamTexture();
         rawImage.texture = webcamTexture;
+        webcamTexture.deviceName = devicesList[AppController.instance.currentDeviceInUse];
         rawImage.material.mainTexture = webcamTexture;
         webcamTexture.Play();
+    }
+
+    public void StartConfigCamera()
+    {
+        webcamConfigTexture = new WebCamTexture();
+        rawImage_Config.texture = webcamConfigTexture;
+        webcamConfigTexture.deviceName = devicesList[AppController.instance.currentDeviceInUse];
+        rawImage_Config.material.mainTexture = webcamConfigTexture;
+        webcamConfigTexture.Play();
     }
 
     public void StopCamera()
@@ -32,57 +69,28 @@ public class WebcamBehavior : MonoBehaviour
         webcamTexture.Stop();
     }
 
-    public void StartWebcamCapture()
+    public void StopConfigCamera()
     {
-        Resolution cameraResolution = PhotoCapture.SupportedResolutions.OrderByDescending((res) => res.width * res.height).First();
-        Texture2D targetTexture = new Texture2D(cameraResolution.width, cameraResolution.height);
-
-        PhotoCapture.CreateAsync(false, delegate(PhotoCapture captureObject) {
-            Debug.Log("Created PhotoCapture Object");
-            photoCaptureObject = captureObject;
-
-            CameraParameters c = new CameraParameters();
-            c.hologramOpacity = 0.0f;
-            c.cameraResolutionWidth = targetTexture.width;
-            c.cameraResolutionHeight = targetTexture.height;
-            c.pixelFormat = CapturePixelFormat.BGRA32;
-
-            captureObject.StartPhotoModeAsync(c, delegate(PhotoCapture.PhotoCaptureResult result) {
-                Debug.Log("Started Photo Capture Mode");
-                
-                StopCamera();
-
-                TakePicture();
-            });
-        });
+        webcamConfigTexture.Stop();
     }
 
-    void TakePicture()
+    public void StartTakePhoto()
     {
-        Debug.Log(string.Format("Taking Picture ({0}/{1})...", AppController.instance.currentImageID + 1, AppController.instance.totalImagesForVideo));
-        string filename = string.Format(@"CapturedImage{0}.jpg", AppController.instance.currentImageID);
-        filePath = System.IO.Path.Combine(Application.persistentDataPath, filename);
-
-        photoCaptureObject.TakePhotoAsync(filePath, PhotoCaptureFileOutputFormat.JPG, OnCapturedPhotoToDisk);
+        StartCoroutine(TakePhoto());
     }
 
-    void OnCapturedPhotoToDisk(PhotoCapture.PhotoCaptureResult result)
+    IEnumerator TakePhoto()
     {
-        Debug.Log("Saved Picture To Disk! - " + result);
+        yield return new WaitForEndOfFrame(); 
 
-        photoCaptureObject.StopPhotoModeAsync(OnStoppedPhotoMode);
-    }
+        Texture2D photo = new Texture2D(webcamTexture.width, webcamTexture.height);
+        photo.SetPixels(webcamTexture.GetPixels());
+        photo.Apply();
+        
+        byte[] bytes = photo.EncodeToPNG();
 
-    void OnStoppedPhotoMode(PhotoCapture.PhotoCaptureResult result)
-    {
-        photoCaptureObject.Dispose();
-        photoCaptureObject = null;
+        AppController.instance.LoadSpriteFromBytes(bytes);
 
-        Debug.Log("Captured images have been saved at the following path.");
-        Debug.Log(Application.persistentDataPath);
-
-        AppController.instance.LoadSprite(filePath);
-
-        StartCamera();
+        Debug.Log("PRINTED");
     }
 }

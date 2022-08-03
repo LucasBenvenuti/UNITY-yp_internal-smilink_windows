@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 using TMPro;
 
 public class AppController : MonoBehaviour
@@ -22,8 +23,23 @@ public class AppController : MonoBehaviour
     [SerializeField] TMP_Text counterTextElement;
     [SerializeField] CanvasGroup counterTextBox;
     [SerializeField] WebcamBehavior webcamElement;
-
     [SerializeField] AnimatedImage animatedImage;
+    public TMP_Text poseText;
+    public CanvasGroup poseTextBox;
+    [SerializeField] CanvasGroup fadeImage;
+    public TMP_Text loadingText;
+
+    public TMP_Text fullySavedText;
+
+    public int currentDeviceInUse = 0;
+
+    [SerializeField] Animator cameraIconAnimator;
+    [SerializeField] AudioSource audioSource;
+    [SerializeField] CanvasGroup fadeEffect;
+    
+    bool hasRestarted = false;
+    [SerializeField] int restartTime = 60; 
+    int currentRestartTime = 0; 
 
     void Awake()
     {
@@ -44,29 +60,84 @@ public class AppController : MonoBehaviour
                 appPhases[i].interactable = false;
                 appPhases[i].blocksRaycasts = false;
             }
+            else
+            {
+                appPhases[i].alpha = 1f;
+                appPhases[i].interactable = true;
+                appPhases[i].blocksRaycasts = true;
+            }
         }
 
         counterTextBox.alpha = 0f;
         counterTextBox.interactable = false;
         counterTextBox.blocksRaycasts = false;
+
+        poseTextBox.alpha = 0f;
+        poseTextBox.interactable = false;
+        poseTextBox.blocksRaycasts = false;
+
+        fadeImage.alpha = 1f;
+        fadeImage.interactable = true;
+        fadeImage.blocksRaycasts = true;
+
+        fadeEffect.alpha = 0f;
+        fadeEffect.interactable = false;
+        fadeEffect.blocksRaycasts = false;
     }
 
     void Start()
     {
+        LeanTween.value(gameObject, 0f, 1f, 1f).setOnComplete(()=> {
+            LeanTween.alphaCanvas(fadeImage, 0f, 0.5f).setEaseInOutCubic().setOnComplete(()=> {
+                fadeImage.interactable = false;
+                fadeImage.blocksRaycasts = false;
+            });
+        });
+
         currentCounter = startCounterFrom;
+
+        currentDeviceInUse = PlayerPrefs.GetInt("DeviceInUse");
 
         CleanPersistentData();
     }
 
+    void Update()
+    {
+        if(Input.GetKeyDown(KeyCode.C) && currentAppPhase == 0)
+        {
+            if(currentAppPhase == 0)
+            {
+                GoToAppPhase(3);   
+            }
+            else
+            {
+                Debug.Log("Você precisa estar na etapa inicial do jogo para abrir o menu de configurações");
+            }
+        }        
+    }
+
     public void GoToAppPhase(int phaseID)
     {
-        webcamElement.StartCamera();
+        if(phaseID == 1)
+        {
+            // webcamElement.StartCamera();
+        }
+        else if(phaseID == 2)
+        {
+            loadingText.text = "Estamos criando seu vídeo para\ncompartilhamento";
+        }
+        else if(phaseID == 3)
+        {
+            webcamElement.StopCamera();
+            webcamElement.StartConfigCamera();
+        }
 
-        LeanTween.value(gameObject, 0f, 1f, 1f).setOnComplete(()=>{
-            LeanTween.alphaCanvas(appPhases[currentAppPhase], 0, 0.5f).setEaseInOutCubic().setOnStart(()=>{
-                appPhases[currentAppPhase].interactable = false;
-                appPhases[currentAppPhase].blocksRaycasts = false;
-            });
+        LeanTween.value(gameObject, 0f, 1f, 0.2f).setOnComplete(()=>{
+
+            appPhases[currentAppPhase].interactable = false;
+            appPhases[currentAppPhase].blocksRaycasts = false;
+
+            LeanTween.alphaCanvas(appPhases[currentAppPhase], 0, 0.5f).setEaseInOutCubic().setOnStart(()=>{});
 
             currentAppPhase = phaseID;
 
@@ -82,9 +153,16 @@ public class AppController : MonoBehaviour
                 {
                     StartCounter();
                 }
-                else if(currentAppPhase == 2)
+                else if(currentAppPhase == 0)
+                {
+                    webcamElement.StartCamera();
+                    webcamElement.StopConfigCamera();
+                }
+                else if(currentAppPhase == 4)
                 {
                     webcamElement.StopCamera();
+
+                    StartCoroutine(RestartCounter());
                 }
                 
             });
@@ -92,16 +170,47 @@ public class AppController : MonoBehaviour
         });
     }
 
+    IEnumerator RestartCounter()
+    {
+        while(!hasRestarted)
+        {
+            currentRestartTime++;
+
+            yield return new WaitForSeconds(1f);
+
+            if(currentRestartTime >= restartTime)
+            {
+                hasRestarted = true;
+
+                RestartScene();
+            }
+            
+        }
+    }
+
     public void StartCounter()
     {
-
         StartCoroutine(StartCounterEnumerator());
     }
 
     IEnumerator StartCounterEnumerator()
     {
+        poseText.text = "Prepare sua pose <b>" + (currentImageID + 1) + "</b> de <b>" + totalImagesForVideo + "</b>";
+
         if(currentImageID == 0)
-            yield return new WaitForSeconds(2f);
+        {
+            LeanTween.alphaCanvas(poseTextBox, 1f, 0.5f).setEaseInOutCubic().setOnStart(()=>{
+                LeanTween.alphaCanvas(cameraIconAnimator.GetComponent<CanvasGroup>(), 1f, 0.2f).setEaseInOutCubic().setOnComplete(()=> { cameraIconAnimator.SetTrigger("ReturnAnim");});
+            }).setOnComplete(()=> {});
+
+            yield return new WaitForSeconds(3f);
+        }
+        else
+        {
+            LeanTween.alphaCanvas(poseTextBox, 1f, 0.5f).setEaseInOutCubic().setOnStart(()=>{
+                LeanTween.alphaCanvas(cameraIconAnimator.GetComponent<CanvasGroup>(), 1f, 0.2f).setEaseInOutCubic().setOnComplete(()=> { cameraIconAnimator.SetTrigger("ReturnAnim");});
+            }).setOnComplete(()=> {});
+        }
 
         LeanTween.alphaCanvas(counterTextBox, 1f, 0.5f).setEaseInOutCubic();
 
@@ -123,9 +232,20 @@ public class AppController : MonoBehaviour
             counterTextElement.text = currentCounter.ToString();
         });
 
+        LeanTween.alphaCanvas(poseTextBox, 0f, 0.2f).setEaseInOutCubic().setOnStart(()=> {
+            LeanTween.alphaCanvas(cameraIconAnimator.GetComponent<CanvasGroup>(), 0f, 0.2f).setEaseInOutCubic().setOnComplete(()=> { cameraIconAnimator.SetTrigger("EndAnim"); });
+        }).setOnComplete(()=> {});
+
+        audioSource.Play();
+
+        LeanTween.alphaCanvas(fadeEffect, 0.8f, 0.1f).setEaseInCirc().setOnComplete(()=> {
+            LeanTween.alphaCanvas(fadeEffect, 0f, 0.1f).setEaseOutCirc().setOnComplete(()=> {});
+        });
+
         yield return new WaitForSeconds(0.4f);
 
-        webcamElement.StartWebcamCapture();
+        webcamElement.StartTakePhoto();
+        // webcamElement.StartWebcamCapture();
     }
 
     public void CleanPersistentData()
@@ -165,6 +285,33 @@ public class AppController : MonoBehaviour
         }
     }
 
+    public void LoadSpriteFromBytes(byte[] byteArray)
+    {
+        if (byteArray.Length == 0)
+        {
+            Debug.Log("Byte vazio ou nulo");
+
+            return;
+        }
+
+        Texture2D texture = new Texture2D(1280, 800, TextureFormat.RGB24, false);
+        texture.filterMode = FilterMode.Trilinear;
+        texture.LoadImage(byteArray);
+
+        pictures.Add(texture);
+
+        currentImageID++;
+
+        if(currentImageID < totalImagesForVideo)
+        {
+            StartCounter();
+        }
+        else
+        {
+            GenerateVideo();
+        }
+    }
+
     public void GenerateVideo()
     {
         Debug.Log("CAPTURE HAS ENDED");
@@ -172,5 +319,38 @@ public class AppController : MonoBehaviour
         GoToAppPhase(2);
 
         animatedImage.StartAnimation();
+    }
+
+    public void SetCameraDevice(int i)
+    {
+        Debug.Log(i);
+        
+
+        if(i < webcamElement.devicesList.Count)
+        {
+            currentDeviceInUse = i;
+            
+            webcamElement.webcamConfigTexture.Stop();
+            webcamElement.webcamConfigTexture.deviceName = webcamElement.devicesList[currentDeviceInUse];
+            webcamElement.webcamConfigTexture.Play();
+
+            PlayerPrefs.SetInt("DeviceInUse", currentDeviceInUse);
+        }
+        else
+        {
+            Debug.Log("No device detected!");
+        }
+    }
+
+    public void RestartScene()
+    {
+        hasRestarted = true;
+
+        LeanTween.alphaCanvas(fadeImage, 1f, 0.5f).setEaseInOutCubic().setOnStart(()=> {
+            fadeImage.interactable = false;
+            fadeImage.blocksRaycasts = false;
+        }).setOnComplete(()=> {
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        });
     }
 }
